@@ -1,0 +1,5 @@
+beautifulsoup4==4.13.4
+praw==7.8.1
+python-dotenv==1.1.1
+python-telegram-bot==22.3
+requests==2.32.5
