@@ -6,6 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 from utils import ensure_dirs
 from reddit_fetch import extract_text_from_input
+from summarizer import make_reel_script_prompt
 
 logging.basicConfig(filename="../logs.txt",encoding='utf-8',level=logging.INFO, format="[%(levelname)s] %(message)s")
 load_dotenv()
@@ -26,26 +27,41 @@ HELP_TEXT = (
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(HELP_TEXT)
 
-async def handle_story(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def create_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (update.message.text or "").strip()
     try:
         await update.message.reply_text("Extracting text...")
         raw_text = await extract_text_from_input(msg)
         if not raw_text or len(raw_text.strip()) < 40:
             raise ValueError("Couldn't extract enough text. Paste a link or longer text.")
-        
-        # 2) Summarize + punch up into reel script
-        await update.message.reply_text("Generating script...")
-        script_text = make_reel_script(raw_text, target_words=175)
-        
+                
+        script_text = make_reel_script_prompt(raw_text)
+        await update.message.reply_text(f"{script_text}")
+
     except Exception as e:
-        logging.exception("/story failed")
+        logging.exception("/prompt failed")
+        await update.message.reply_text(f"Error: {e}")
+
+async def create_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = (update.message.text or "").strip()
+    try:
+        await update.message.reply_text("Audio Text Receieved...")
+        raw_text = await extract_text_from_input(msg)
+
+        await update.message.reply_text(f"Length Text to convert to audio: {len(raw_text)} characters")
+        
+        await update.message.reply_text("Generating audio...")
+        await update.message.reply_text(f"Audio generation not implemented yet.")
+
+    except Exception as e:
+        logging.exception("/audio failed")
         await update.message.reply_text(f"Error: {e}")
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("story", handle_story))
+    app.add_handler(CommandHandler("prompt", create_prompt))
+    app.add_handler(CommandHandler("audio", create_audio))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
